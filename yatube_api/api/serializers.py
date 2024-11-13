@@ -5,13 +5,11 @@ from posts.models import Comment, Follow, Group, Post, User
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
-    )
+    author = SlugRelatedField(read_only=True, slug_field='username')
 
     class Meta:
         fields = '__all__'
-        read_only_fields = ('post', )
+        read_only_fields = ('post',)
         model = Comment
 
 
@@ -30,41 +28,28 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
 
 
-class FollowCreateSerializer(serializers.ModelSerializer):
+class FollowSerializer(serializers.ModelSerializer):
     user = SlugRelatedField(slug_field='username', read_only=True)
-    following = SlugRelatedField(slug_field='username', read_only=True)
+    following = SlugRelatedField(
+        slug_field='username', queryset=User.objects.all()
+    )
 
     class Meta:
         fields = ('user', 'following')
         model = Follow
 
-    def validate(self, data):
+    def validate_following(self, value):
         request = self.context.get("request")
         user = request.user
-        following = User.objects.filter(
-            username=request.data.get('following')
-        ).first()
 
-        if not following:
-            raise serializers.ValidationError('Пользователя не существует...')
-
-        if user == following:
+        if user == value:
             raise serializers.ValidationError('Нельзя подписаться на себя...')
 
         is_subscribe_in_table = Follow.objects.select_related(
             'user', 'following'
-        ).filter(user=user, following=following)
+        ).filter(user=user, following=value)
 
         if is_subscribe_in_table:
             raise serializers.ValidationError('Подписка уже оформлена...')
 
-        return data
-
-
-class FollowListSerializer(serializers.ModelSerializer):
-    user = SlugRelatedField(slug_field='username', read_only=True)
-    following = SlugRelatedField(slug_field='username', read_only=True)
-
-    class Meta:
-        fields = ('user', 'following')
-        model = Follow
+        return value

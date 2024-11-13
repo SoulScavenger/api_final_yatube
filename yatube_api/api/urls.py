@@ -16,9 +16,6 @@ router_v1.register(
 
 api_v1_urls = [
     path('', include(router_v1.urls)),
-]
-
-api_v1_urls += [
     path('', include('djoser.urls.jwt'))
 ]
 

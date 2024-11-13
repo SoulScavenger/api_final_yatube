@@ -34,7 +34,8 @@ class Post(models.Model):
         Group,
         on_delete=models.SET_NULL,
         null=True,
-        verbose_name='Сообщество')
+        verbose_name='Сообщество'
+    )
     image = models.ImageField(
         upload_to='posts/',
         null=True,
@@ -46,6 +47,7 @@ class Post(models.Model):
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
         default_related_name = 'posts'
+        ordering = ('-pub_date',)
 
     def __str__(self):
         return self.text[:TITLE_SLICE]
@@ -55,7 +57,8 @@ class Comment(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор')
+        verbose_name='Автор'
+    )
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -82,12 +85,14 @@ class Comment(models.Model):
 
 
 class Follow(models.Model):
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='users',
-        verbose_name='Подписчик'
+        verbose_name='Пользователь'
     )
+
     following = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -98,6 +103,17 @@ class Follow(models.Model):
     class Meta:
         verbose_name = 'подписка'
         verbose_name_plural = 'Подписки'
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'following'],
+                name='unique_user_following'
+            ),
+            models.CheckConstraint(
+                name='check_user_following',
+                check=~models.Q(user=models.F("following")),
+            )
+        ]
 
     def __str__(self):
         return (
